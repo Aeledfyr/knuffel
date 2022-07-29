@@ -22,13 +22,25 @@ use crate::traits::{ErrorSpan, Span};
 ///
 /// See [crate documentation](crate#Errors) and [miette} documentation to
 /// find out how deal with them.
-#[derive(Debug, Diagnostic, Error)]
-#[error("error parsing KDL")]
+#[derive(Debug, Diagnostic)]
 pub struct Error {
     #[source_code]
     pub(crate) source_code: NamedSource,
     #[related]
     pub(crate) errors: Vec<miette::Report>,
+}
+
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        // This is sub-optimal, but it makes the errors more helpful
+        // than just "error parsing KDL" when not using miette
+        self.errors.get(0).and_then(|e| e.chain().next())
+    }
+}
+impl std::fmt::Display for Error {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(fmt, "error parsing KDL")
+    }
 }
 
 /// An error type that is returned by decoder traits and emitted to the context
